@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Descasio AI Innovation Hub</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Custom scrollbar for modals */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-slate-900 min-h-screen p-4 md:p-8">
+
+    <div id="app" class="max-w-6xl mx-auto relative min-h-screen flex flex-col">
+        <!-- Content will be injected here by JavaScript -->
+        <div class="flex items-center justify-center h-screen">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+    </div>
+
+    <!-- Firebase & Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHLmLO9vW5mncFMF2BP_xEcdxfBBnKMn0",
+            authDomain: "ai-assessment-ea28d.firebaseapp.com",
+            projectId: "ai-assessment-ea28d",
+            storageBucket: "ai-assessment-ea28d.firebasestorage.app",
+            messagingSenderId: "880569979838",
+            appId: "1:880569979838:web:d19a7b4c6c62634bf0dfef",
+            measurementId: "G-R2RZEK3CTD"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'descasio-ai-hub';
+        const ADMIN_PIN = "()_+";
+
+        // --- Data ---
+        const QUIZ_QUESTIONS = [
+            // SECTION 1: AWARENESS & FOUNDATIONS
+            { id: 'q1', section: 1, text: 'In the context of LLMs, what is a "Hallucination"?', options: [ { text: 'When the AI encounters a server error.', points: 0 }, { text: 'When the AI generates plausible but factually incorrect information.', points: 5 }, { text: 'When the AI refuses to answer a prompt.', points: 0 } ]},
+            { id: 'q2', section: 1, text: 'What does "RAG" (Retrieval-Augmented Generation) do?', options: [ { text: 'It speeds up the AI\'s typing speed.', points: 0 }, { text: 'It connects the AI to specific, external data to improve accuracy.', points: 5 }, { text: 'It generates random images for text prompts.', points: 0 } ]},
+            { id: 'q3', section: 1, text: 'Is it safe to paste Descasio internal financial data into a public, free chatbot?', options: [ { text: 'Yes, if I use a pseudonym.', points: 0 }, { text: 'No, public tools may use my data to train future models.', points: 5 } ]},
+            { id: 'q4', section: 1, text: 'What is a "Token" in AI processing?', options: [ { text: 'A digital currency used to pay for AI.', points: 0 }, { text: 'A basic unit of text (like a word or part of a word) the AI reads.', points: 5 }, { text: 'A security key for logging in.', points: 0 } ]},
+            { id: 'q5', section: 1, text: 'Which of these is a limitation of Generative AI?', options: [ { text: 'It cannot write code.', points: 0 }, { text: 'It lacks true reasoning and may produce biased outputs.', points: 5 }, { text: 'It cannot translate languages.', points: 0 } ]},
+            { id: 'q6', section: 1, text: 'What does "Multimodal" mean in AI?', options: [ { text: 'The ability to run on multiple computers.', points: 0 }, { text: 'The ability to process different inputs like text, images, and audio.', points: 5 }, { text: 'The ability to handle multiple users at once.', points: 0 } ]},
+            { id: 'q7', section: 1, text: 'What is a "Context Window"?', options: [ { text: 'The size of the AI\'s user interface.', points: 0 }, { text: 'The amount of information the AI can "remember" during a conversation.', points: 5 }, { text: 'The time limit for a single query.', points: 0 } ]},
+            { id: 'q8', section: 1, text: 'What is "Prompt Engineering"?', options: [ { text: 'The software engineering required to build an LLM.', points: 0 }, { text: 'The skill of crafting inputs to get specific and useful AI results.', points: 5 }, { text: 'Hardcoding responses for specific questions.', points: 0 } ]},
+            { id: 'q9', section: 1, text: 'What is "Temperature" in AI settings?', options: [ { text: 'The physical heat generated by the servers.', points: 0 }, { text: 'A setting that controls the randomness/creativity of the output.', points: 5 }, { text: 'The speed at which the AI responds.', points: 0 } ]},
+            { id: 'q10', section: 1, text: 'How should you treat the output of an AI for high-stakes work?', options: [ { text: 'Accept it immediately as it is more accurate than human work.', points: 0 }, { text: 'Treat it as a first draft and always fact-check and verify.', points: 5 }, { text: 'Use it only for non-important tasks.', points: 0 } ]},
+
+            // SECTION 2: ADOPTION & FREQUENCY
+            { id: 'q11', section: 2, text: 'How often do you use AI for your core work tasks?', options: [ { text: 'Never / Rarely', points: 0 }, { text: 'Weekly (1-2 times)', points: 2 }, { text: 'Daily integration', points: 5 } ]},
+            { id: 'q12', section: 2, text: 'Have you used AI to draft or polish a formal email in the last 7 days?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
+            { id: 'q13', section: 2, text: 'Do you use AI to summarize long documents or meeting transcripts?', options: [ { text: 'Never', points: 0 }, { text: 'Occasionally', points: 3 }, { text: 'Standard practice', points: 5 } ]},
+            { id: 'q14', section: 2, text: 'Have you used AI for brainstorming or creative strategy in the last month?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
+            { id: 'q15', section: 2, text: 'Do you use AI to troubleshoot technical issues or write code/formulas?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
+            { id: 'q16', section: 2, text: 'Have you replaced a standard search (Google) with an AI chat today?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
+            { id: 'q17', section: 2, text: 'Is an AI tool (Copilot/Gemini) pinned to your browser/taskbar?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
+            { id: 'q18', section: 2, text: 'Have you tried AI for data cleaning or analysis in Excel/Sheets?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
+            { id: 'q19', section: 2, text: 'Do you use AI to simplify complex technical jargon for clients?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
+            { id: 'q20', section: 2, text: 'Have you shared a helpful prompt with a colleague in the past month?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
+
+            // SECTION 3: SKILL & COMPLEXITY
+            { id: 'q21', section: 3, text: 'How do you handle a "bad" response from an AI?', options: [ { text: 'Close the chat and do it manually.', points: 0 }, { text: 'Tell the AI it was wrong and ask for a fix.', points: 2 }, { text: 'Provide more context, examples, and negative constraints.', points: 5 } ]},
+            { id: 'q22', section: 3, text: 'What is "Persona Prompting"?', options: [ { text: 'Entering personal data into AI.', points: 0 }, { text: 'Assigning a specific role/expert profile to the AI.', points: 5 } ]},
+            { id: 'q23', section: 3, text: 'Can you get an AI to output data specifically in JSON or CSV format?', options: [ { text: 'No, it only writes text.', points: 0 }, { text: 'Yes, I can request and verify specific formats.', points: 5 } ]},
+            { id: 'q24', section: 3, text: 'What is "Chain-of-Thought" prompting?', options: [ { text: 'Prompting the AI to think step-by-step.', points: 5 }, { text: 'Linking multiple AI chats together.', points: 0 } ]},
+            { id: 'q25', section: 3, text: 'Do you use delimiters (e.g., ### or """) to separate instructions from data?', options: [ { text: 'No', points: 0 }, { text: 'Yes, for complex prompts.', points: 5 } ]},
+            { id: 'q26', section: 3, text: 'What are "Few-Shot" examples?', options: [ { text: 'Providing 2-3 examples of the desired output in the prompt.', points: 5 }, { text: 'Asking the AI to answer in very few words.', points: 0 } ]},
+            { id: 'q27', section: 3, text: 'How do you handle AI "Refusal" (e.g., "I cannot answer this")?', options: [ { text: 'I stop and move on.', points: 0 }, { text: 'I rephrase to focus on a safe/educational context.', points: 5 } ]},
+            { id: 'q28', section: 3, text: 'Can you use AI to summarize a 50-page PDF accurately?', options: [ { text: 'No, it\'s too long.', points: 0 }, { text: 'Yes, by uploading the file or using chunking methods.', points: 5 } ]},
+            { id: 'q29', section: 3, text: 'What is "System Prompt"?', options: [ { text: 'The prompt the user types first.', points: 0 }, { text: 'The base level instruction that defines the AI\'s behavior.', points: 5 } ]},
+            { id: 'q30', section: 3, text: 'Do you verify AI-generated facts with a secondary source?', options: [ { text: 'Rarely', points: 0 }, { text: 'Always for professional work', points: 5 } ]}
+        ];
+
+        // --- State Management ---
+        const state = {
+            user: null,
+            view: 'welcome', // welcome, quiz, submitted, admin
+            adminSubView: 'registry', // registry, dept
+            submissions: [],
+            formData: { name: '', department: '', email: '' },
+            answers: {},
+            selectedSubmission: null,
+            isSubmitting: false,
+            isAuthLoading: true,
+            authError: null,
+            firestoreError: null,
+            isAdminAuthenticated: false,
+            showPinModal: false,
+            pinInput: ""
+        };
+
+        // --- Global Handlers (Registered on window for HTML access) ---
+        
+        window.viewSubmission = (id) => {
+            state.selectedSubmission = state.submissions.find(sub => sub.id === id);
+            render();
+        }
+
+        window.setAdminView = (val) => {
+            state.adminSubView = val;
+            render();
+        };
+
+        window.selectOption = (qId, points, text) => {
+            // 1. Update State
+            state.answers[qId] = { points, text };
+
+            // 2. Update UI for specific Question (No Global Render)
+            const questionBlock = document.getElementById(`q-${qId}`);
+            if (questionBlock) {
+                const buttons = questionBlock.querySelectorAll('button');
+                buttons.forEach(btn => {
+                    const span = btn.querySelector('span');
+                    // Check text match safely (handling escaped quotes potentially)
+                    const isSelected = span && span.innerText === text.replace(/&quot;/g, '"').replace(/\\'/g, "'");
+                    const dot = btn.querySelector('div'); 
+
+                    if (isSelected) {
+                        btn.className = "w-full text-left px-8 py-5 rounded-2xl border-2 transition-all flex items-center justify-between group-hover:bg-opacity-50 mb-3 border-blue-600 bg-blue-50 text-blue-700 font-black shadow-inner";
+                        dot.className = "w-6 h-6 rounded-full border-2 transition-all bg-blue-600 border-blue-600 scale-110 shadow-lg";
+                    } else {
+                        btn.className = "w-full text-left px-8 py-5 rounded-2xl border-2 transition-all flex items-center justify-between group-hover:bg-opacity-50 mb-3 border-slate-50 bg-slate-50/30 hover:border-slate-200";
+                        dot.className = "w-6 h-6 rounded-full border-2 transition-all border-slate-200";
+                    }
+                });
+            }
+
+            // 3. Update Progress
+            const progressEl = document.getElementById('quiz-progress');
+            if (progressEl) progressEl.innerText = `${Object.keys(state.answers).length} / 30`;
+
+            // 4. Update Submit Button
+            const btnSubmit = document.getElementById('btn-submit');
+            if (btnSubmit) {
+                const canSubmit = Object.keys(state.answers).length >= 30;
+                if (canSubmit && !state.isSubmitting) {
+                    btnSubmit.removeAttribute('disabled');
+                    btnSubmit.classList.remove('opacity-50', 'cursor-not-allowed');
+                    btnSubmit.classList.add('hover:scale-[1.02]');
+                } else {
+                    btnSubmit.setAttribute('disabled', 'true');
+                    btnSubmit.classList.add('opacity-50', 'cursor-not-allowed');
+                    btnSubmit.classList.remove('hover:scale-[1.02]');
+                }
+            }
+        };
+
+        // --- Logic & Helpers ---
+        function render() {
+            const app = document.getElementById('app');
+            app.innerHTML = ''; // Clear
+
+            // 1. Modals (Overlays)
+            if (state.authError) renderAuthError(app);
+            if (state.firestoreError) renderFirestoreError(app);
+            if (state.showPinModal) renderPinModal(app);
+            if (state.selectedSubmission) renderDetailModal(app);
+
+            // 2. Header
+            renderHeader(app);
+
+            // 3. Main View
+            const main = document.createElement('main');
+            main.className = "max-w-6xl mx-auto w-full flex-1";
+            
+            if (state.view === 'welcome') renderWelcome(main);
+            else if (state.view === 'quiz') renderQuiz(main);
+            else if (state.view === 'submitted') renderSubmitted(main);
+            else if (state.view === 'admin') renderAdmin(main);
+
+            app.appendChild(main);
+
+            // 4. Footer
+            renderFooter(app);
+
+            // Initialize Icons
+            lucide.createIcons();
+        }
+
+        // --- Components ---
+
+        function renderHeader(parent) {
+            const header = document.createElement('header');
+            header.className = "w-full flex justify-between items-center mb-10";
+            header.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <div class="bg-blue-600 p-2.5 rounded-2xl shadow-xl shadow-blue-200">
+                        <i data-lucide="brain-circuit" class="text-white w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-black text-slate-800 tracking-tighter leading-none uppercase">Descasio</h1>
+                        <p class="text-[10px] uppercase tracking-[0.4em] font-black text-blue-600">AI Innovation Hub</p>
+                    </div>
+                </div>
+                <div id="header-actions"></div>
+            `;
+            
+            const actions = header.querySelector('#header-actions');
+            if (!state.isAdminAuthenticated) {
+                const btn = document.createElement('button');
+                btn.className = "flex items-center gap-2 text-slate-400 hover:text-blue-600 text-xs font-bold uppercase transition-all";
+                btn.innerHTML = `<i data-lucide="lock" class="w-3.5 h-3.5"></i> Registry Access`;
+                btn.onclick = () => { state.showPinModal = true; render(); };
+                actions.appendChild(btn);
+            } else {
+                const div = document.createElement('div');
+                div.className = "flex gap-3";
+                
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = "flex items-center gap-2 bg-white px-5 py-2.5 rounded-full border border-slate-200 shadow-sm font-bold text-xs uppercase text-slate-700 hover:border-blue-600";
+                const isQuiz = state.view === 'welcome'; // Simplified toggle logic
+                toggleBtn.innerHTML = state.view === 'admin' 
+                    ? `<i data-lucide="clipboard-list" class="w-4 h-4"></i> Take Quiz`
+                    : `<i data-lucide="users" class="w-4 h-4"></i> View Registry`;
+                toggleBtn.onclick = () => { 
+                    state.view = state.view === 'admin' ? 'welcome' : 'admin'; 
+                    render(); 
+                };
+
+                const logoutBtn = document.createElement('button');
+                logoutBtn.className = "p-2.5 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-colors";
+                logoutBtn.innerHTML = `<i data-lucide="unlock" class="w-5 h-5"></i>`;
+                logoutBtn.onclick = () => { state.isAdminAuthenticated = false; state.view = 'welcome'; render(); };
+
+                div.appendChild(toggleBtn);
+                div.appendChild(logoutBtn);
+                actions.appendChild(div);
+            }
+            parent.appendChild(header);
+        }
+
+        function renderWelcome(parent) {
+            const container = document.createElement('div');
+            container.className = "bg-white rounded-[3rem] shadow-2xl border border-slate-100 p-8 md:p-20 text-center max-w-3xl mx-auto fade-in";
+            
+            // Logic for initial render
+            const isEmailValid = state.formData.email.toLowerCase().endsWith('@descasio.io');
+            const isFormComplete = state.formData.name && state.formData.department && isEmailValid;
+
+            container.innerHTML = `
+                <h2 class="text-5xl font-black mb-6 text-slate-900 tracking-tight">AI Readiness 2026</h2>
+                <p class="text-slate-500 mb-6 text-xl max-w-xl mx-auto leading-relaxed">
+                    Determine your current AI competency across <span class="text-blue-600 font-black">30 metrics</span>.
+                </p>
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-10 max-w-lg mx-auto flex gap-3 items-start text-left">
+                    <i data-lucide="info" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"></i>
+                    <p class="text-sm font-medium text-amber-800">Please answer honestly. Do not use AI tools to assist with this diagnostic, as it will skew your personal assessment results.</p>
+                </div>
+
+                <div class="space-y-6 text-left max-w-lg mx-auto">
+                    <div class="flex items-center gap-3 bg-blue-50 px-5 py-4 rounded-2xl border border-blue-100 mb-6">
+                        <i data-lucide="alert-triangle" class="text-blue-600 w-5 h-5 flex-shrink-0"></i>
+                        <p class="text-xs font-bold text-blue-800 uppercase tracking-wider leading-snug">Restriction: @descasio.io email required.</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Full Identity</label>
+                            <input type="text" id="input-name" class="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-600 transition-all outline-none font-bold" placeholder="Full Name" value="${state.formData.name}">
+                        </div>
+                        
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Corporate Email</label>
+                            <div class="relative">
+                                <i data-lucide="mail" class="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                                <input type="email" id="input-email" class="w-full pl-14 pr-6 py-4 rounded-2xl bg-slate-50 border outline-none font-bold transition-all ${state.formData.email && !isEmailValid ? 'border-red-300' : 'border-slate-200 focus:border-blue-600'}" placeholder="username@descasio.io" value="${state.formData.email}">
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Department <span class="text-red-500">*</span></label>
+                            <select id="input-dept" class="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-200 font-bold appearance-none outline-none focus:border-blue-600">
+                                <option value="">Select Dept</option>
+                                ${['Finance','Sales','Customer Success','HR/Admin','Marketing','Strategy','Product','Software Engineering','Technology Services']
+                                    .map(d => `<option value="${d}" ${state.formData.department === d ? 'selected' : ''}>${d}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+
+                    <button id="btn-start" class="w-full bg-slate-900 text-white font-black py-4 rounded-3xl hover:bg-black shadow-2xl flex items-center justify-center gap-3 text-lg transition-all disabled:opacity-30 mt-4" ${!isFormComplete || state.isAuthLoading ? 'disabled' : ''}>
+                        ${state.isAuthLoading ? '<i data-lucide="loader-2" class="w-6 h-6 animate-spin"></i>' : 'Complete 30-Point Assessment'}
+                        ${!state.isAuthLoading ? '<i data-lucide="send" class="w-5 h-5"></i>' : ''}
+                    </button>
+                </div>
+            `;
+
+            parent.appendChild(container);
+            
+            // Interactive Logic - NO render() calls here prevents refreshing
+            const nameInput = container.querySelector('#input-name');
+            const emailInput = container.querySelector('#input-email');
+            const deptInput = container.querySelector('#input-dept');
+            const startBtn = container.querySelector('#btn-start');
+
+            const updateUI = () => {
+                const isEmailValidNow = state.formData.email.toLowerCase().endsWith('@descasio.io');
+                const isCompleteNow = state.formData.name && state.formData.department && isEmailValidNow;
+                
+                // Toggle Button
+                if (isCompleteNow && !state.isAuthLoading) startBtn.removeAttribute('disabled');
+                else startBtn.setAttribute('disabled', 'true');
+
+                // Toggle Email Error Styling
+                if (state.formData.email && !isEmailValidNow) {
+                    emailInput.classList.add('border-red-300');
+                    emailInput.classList.remove('border-slate-200', 'focus:border-blue-600');
+                } else {
+                    emailInput.classList.remove('border-red-300');
+                    emailInput.classList.add('border-slate-200', 'focus:border-blue-600');
+                }
+            };
+
+            nameInput.oninput = (e) => { 
+                state.formData.name = e.target.value; 
+                updateUI(); 
+            };
+            emailInput.oninput = (e) => { 
+                state.formData.email = e.target.value; 
+                updateUI(); 
+            };
+            deptInput.onchange = (e) => { 
+                state.formData.department = e.target.value; 
+                updateUI(); 
+            };
+            startBtn.onclick = () => { 
+                // Double check state before proceeding
+                const isEmailValidNow = state.formData.email.toLowerCase().endsWith('@descasio.io');
+                if (state.formData.name && state.formData.department && isEmailValidNow) {
+                    state.view = 'quiz'; 
+                    render(); // Only render when changing view
+                }
+            };
+        }
+
+        function renderQuiz(parent) {
+            const container = document.createElement('div');
+            container.className = "space-y-8 pb-32 max-w-3xl mx-auto fade-in";
+
+            // Status Bar
+            container.innerHTML = `
+                <div class="bg-slate-900 rounded-3xl p-6 text-white shadow-2xl flex justify-between items-center sticky top-4 z-50 border border-white/10 backdrop-blur-md">
+                    <div class="flex items-center gap-3 font-bold text-sm tracking-widest uppercase opacity-70">
+                        <i data-lucide="brain-circuit" class="w-5 h-5"></i> Quiz Active
+                    </div>
+                    <div id="quiz-progress" class="bg-white/10 px-6 py-2 rounded-2xl font-black text-lg">${Object.keys(state.answers).length} / 30</div>
+                </div>
+            `;
+
+            // Questions
+            QUIZ_QUESTIONS.forEach((q, idx) => {
+                const qEl = document.createElement('div');
+                qEl.className = "bg-white rounded-[2rem] shadow-sm border border-slate-200 p-10 group hover:border-blue-300 transition-all mb-4";
+                
+                let optionsHtml = '';
+                q.options.forEach((opt, optIdx) => {
+                    const isSelected = state.answers[q.id]?.text === opt.text;
+                    const borderClass = isSelected ? 'border-blue-600 bg-blue-50 text-blue-700 font-black shadow-inner' : 'border-slate-50 bg-slate-50/30 hover:border-slate-200';
+                    const dotClass = isSelected ? 'bg-blue-600 border-blue-600 scale-110 shadow-lg' : 'border-slate-200';
+                    
+                    // Bug Fix: Escaping double quotes in the text for the onclick handler
+                    const escapedText = opt.text.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+                    optionsHtml += `
+                        <button onclick="window.selectOption('${q.id}', ${opt.points}, '${escapedText}')" class="w-full text-left px-8 py-5 rounded-2xl border-2 transition-all flex items-center justify-between group-hover:bg-opacity-50 mb-3 ${borderClass}">
+                            <span class="text-lg">${opt.text}</span>
+                            <div class="w-6 h-6 rounded-full border-2 transition-all ${dotClass}"></div>
+                        </button>
+                    `;
+                });
+
+                qEl.innerHTML = `
+                    <div class="flex gap-6 mb-8">
+                        <span class="flex-shrink-0 w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 font-black flex items-center justify-center text-lg border border-slate-100">${idx + 1}</span>
+                        <div class="flex-1">
+                            <p class="text-2xl font-bold text-slate-800 leading-tight">${q.text}</p>
+                        </div>
+                    </div>
+                    <div id="q-${q.id}" class="grid gap-3 ml-18">${optionsHtml}</div>
+                `;
+                container.appendChild(qEl);
+            });
+
+            // Submit Bar
+            const footer = document.createElement('div');
+            footer.className = "fixed bottom-10 left-0 right-0 px-4 pointer-events-none";
+            const canSubmit = Object.keys(state.answers).length >= 30;
+            
+            footer.innerHTML = `
+                <div class="max-w-3xl mx-auto pointer-events-auto">
+                    <button id="btn-submit" class="w-full bg-blue-600 text-white py-4 rounded-[2rem] font-black shadow-2xl flex items-center justify-center gap-3 text-lg transition-all ${!canSubmit || state.isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02]'}" ${!canSubmit || state.isSubmitting ? 'disabled' : ''}>
+                        ${state.isSubmitting ? '<i data-lucide="loader-2" class="w-6 h-6 animate-spin"></i>' : 'Complete 30-Point Assessment'} 
+                        ${!state.isSubmitting ? '<i data-lucide="send" class="w-5 h-5"></i>' : ''}
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(footer);
+            parent.appendChild(container);
+
+            // Fix: Use container.querySelector for button attached to container
+            container.querySelector('#btn-submit').onclick = handleSubmit;
+        }
+
+        function renderSubmitted(parent) {
+            const results = calculateResults();
+            const container = document.createElement('div');
+            container.className = "bg-white rounded-[4rem] shadow-2xl p-16 text-center max-w-2xl mx-auto fade-in";
+            
+            container.innerHTML = `
+                <div class="w-32 h-32 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-10 shadow-inner">
+                    <i data-lucide="check-circle-2" class="text-green-600 w-16 h-16"></i>
+                </div>
+                <h2 class="text-5xl font-black mb-6 tracking-tighter">Diagnostic Complete</h2>
+                <p class="text-slate-500 mb-12 text-xl leading-relaxed">Thank you, <span class="text-slate-900 font-black underline">${state.formData.name}</span>. Your baseline AI metrics have been permanently recorded in the Hub registry.</p>
+                
+                <div class="bg-slate-50 p-10 rounded-[3rem] mb-12 border border-slate-100 shadow-inner">
+                    <p class="text-[10px] font-black text-slate-400 tracking-[0.3em] mb-4 uppercase">Calculated AI Competency</p>
+                    <p class="text-5xl font-black text-blue-600 uppercase tracking-tighter">${results.level}</p>
+                </div>
+                
+                <button onclick="window.location.reload()" class="text-slate-400 font-black hover:text-blue-600 transition-colors uppercase text-xs tracking-[0.3em]">Exit Assessment Session</button>
+            `;
+            parent.appendChild(container);
+        }
+
+        function renderAdmin(parent) {
+            const container = document.createElement('div');
+            container.className = "space-y-8 pb-20 fade-in";
+
+            // Metrics Calculation
+            const tierCounts = { Beginner: 0, Intermediate: 0, Advanced: 0 };
+            let totalOrgScore = 0;
+            state.submissions.forEach(s => {
+                if (s.level === 'Advanced') tierCounts.Advanced++;
+                else if (s.level === 'Intermediate') tierCounts.Intermediate++;
+                else tierCounts.Beginner++;
+                totalOrgScore += (s.totalScore || 0);
+            });
+            const avgScore = state.submissions.length ? Math.round(totalOrgScore / state.submissions.length) : 0;
+
+            // View Switcher (Tabs)
+            const isDeptView = state.adminSubView === 'dept';
+            
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- Total Submissions -->
+                    <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Total Submissions</p>
+                            <p class="text-4xl font-black text-slate-900 leading-none">${state.submissions.length}</p>
+                        </div>
+                        <div class="w-14 h-14 bg-slate-50 rounded-[1.5rem] flex items-center justify-center"><i data-lucide="users" class="text-slate-300 w-7 h-7"></i></div>
+                    </div>
+                    
+                    <!-- Org Adoption Score -->
+                    <div class="bg-blue-600 p-8 rounded-[2rem] shadow-xl shadow-blue-200 text-white flex items-center justify-between relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-8 opacity-10"><i data-lucide="trophy" class="w-24 h-24"></i></div>
+                        <div class="relative z-10">
+                            <p class="text-[10px] font-black text-white/50 uppercase tracking-[0.2em] mb-2">Org. Adoption Score</p>
+                            <div class="flex items-baseline gap-2">
+                                <p class="text-4xl font-black leading-none">${avgScore}</p>
+                                <span class="text-lg font-bold text-white/50">/ 150</span>
+                            </div>
+                        </div>
+                        <div class="w-14 h-14 bg-white/10 rounded-[1.5rem] flex items-center justify-center relative z-10"><i data-lucide="bar-chart-3" class="w-7 h-7"></i></div>
+                    </div>
+
+                    <!-- Tier Breakdown -->
+                    <div class="bg-slate-900 p-8 rounded-[2rem] shadow-xl text-white">
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Competency Breakdown</p>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-300">Advanced</span><span class="text-sm font-black bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-md">${tierCounts.Advanced}</span></div>
+                            <div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-300">Intermediate</span><span class="text-sm font-black bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-md">${tierCounts.Intermediate}</span></div>
+                            <div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-300">Beginner</span><span class="text-sm font-black bg-slate-700 text-slate-400 px-2 py-0.5 rounded-md">${tierCounts.Beginner}</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex gap-4 mb-4 border-b border-slate-200 pb-1">
+                    <button onclick="window.setAdminView('registry')" class="px-6 py-2 rounded-t-xl font-bold text-sm transition-colors ${!isDeptView ? 'bg-white border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}">Registry Log</button>
+                    <button onclick="window.setAdminView('dept')" class="px-6 py-2 rounded-t-xl font-bold text-sm transition-colors ${isDeptView ? 'bg-white border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}">Department Analysis</button>
+                </div>
+
+                <div class="bg-white rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden">
+                    ${isDeptView ? renderDeptTableHTML() : renderRegistryTableHTML()}
+                </div>
+            `;
+            
+            parent.appendChild(container);
+            
+            window.setAdminView = (val) => {
+                state.adminSubView = val;
+                render();
+            };
+        }
+
+        function renderRegistryTableHTML() {
+            const rows = state.submissions.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map(s => `
+                <tr class="hover:bg-slate-50/80 transition-all group border-b border-slate-50 last:border-0">
+                    <td class="px-6 py-6">
+                        <p class="font-black text-slate-800 text-base">${s.name}</p>
+                        <p class="text-xs text-slate-500 font-medium italic">${s.email}</p>
+                        <span class="text-[10px] text-blue-500 font-black uppercase tracking-tighter bg-blue-50 px-2 py-1 rounded-md mt-1 inline-block">${s.department}</span>
+                    </td>
+                    <td class="px-6 py-6 text-center font-bold text-slate-600">${s.section1Score}</td>
+                    <td class="px-6 py-6 text-center font-bold text-slate-600">${s.section2Score}</td>
+                    <td class="px-6 py-6 text-center font-bold text-slate-600">${s.section3Score}</td>
+                    <td class="px-6 py-6 text-center">
+                        <div class="flex flex-col items-center">
+                            <span class="px-4 py-1.5 rounded-full text-xs font-black border ${
+                                s.level === 'Advanced' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                s.level === 'Intermediate' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'
+                            }">${s.totalScore}</span>
+                            <span class="text-[8px] font-bold text-slate-300 uppercase tracking-tighter mt-1">${s.level}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-6">
+                        <button onclick="window.viewSubmission('${s.id}')" class="text-slate-400 hover:text-blue-600 p-2 transition-all">
+                            <i data-lucide="info" class="w-5 h-5"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            return `
+                <div class="p-10 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-2xl font-black text-slate-800 tracking-tight">AI Competency Registry</h3>
+                        <p class="text-slate-400 text-xs font-medium">Individual Data Points</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-[10px] uppercase font-black text-slate-400 bg-slate-50/50">
+                                <th class="px-6 py-6">Staff Details</th>
+                                <th class="px-6 py-6 text-center">Sec 1</th>
+                                <th class="px-6 py-6 text-center">Sec 2</th>
+                                <th class="px-6 py-6 text-center">Sec 3</th>
+                                <th class="px-6 py-6 text-center">Total</th>
+                                <th class="px-6 py-6">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderDeptTableHTML() {
+            // Group by Dept
+            const depts = {};
+            state.submissions.forEach(s => {
+                const d = s.department || "Unknown";
+                if (!depts[d]) depts[d] = { total: 0, count: 0, scores: [] };
+                depts[d].total += (s.totalScore || 0);
+                depts[d].count++;
+                depts[d].scores.push(s.totalScore || 0);
+            });
+
+            const rows = Object.keys(depts).map(dName => {
+                const d = depts[dName];
+                const avg = Math.round(d.total / d.count);
+                
+                // Determine Dept Level Color
+                let badgeClass = "bg-slate-50 text-slate-600 border-slate-200";
+                let levelText = "Beginner";
+                if (avg >= 116) { badgeClass = "bg-purple-50 text-purple-700 border-purple-200"; levelText = "Advanced"; }
+                else if (avg >= 76) { badgeClass = "bg-blue-50 text-blue-700 border-blue-200"; levelText = "Intermediate"; }
+
+                return `
+                    <tr class="hover:bg-slate-50/80 transition-all border-b border-slate-50 last:border-0">
+                        <td class="px-8 py-6 font-black text-slate-800 text-lg">${dName}</td>
+                        <td class="px-8 py-6 text-center">
+                            <span class="bg-slate-100 text-slate-600 px-4 py-1 rounded-full text-sm font-bold">${d.count}</span>
+                        </td>
+                        <td class="px-8 py-6 text-center">
+                            <div class="flex flex-col items-center">
+                                <span class="text-2xl font-black text-slate-800">${avg}</span>
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Avg Score</span>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6 text-center">
+                             <span class="px-4 py-1.5 rounded-full text-xs font-black border uppercase tracking-widest ${badgeClass}">
+                                ${levelText}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            return `
+                <div class="p-10 border-b border-slate-100 bg-slate-50/50">
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight">Departmental Adoption Analysis</h3>
+                    <p class="text-slate-400 text-xs font-medium mt-1">Aggregated performance by business unit</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-[10px] uppercase font-black text-slate-400 bg-slate-50/50">
+                                <th class="px-8 py-6">Department</th>
+                                <th class="px-8 py-6 text-center">Participants</th>
+                                <th class="px-8 py-6 text-center">Adoption Score (Avg)</th>
+                                <th class="px-8 py-6 text-center">Maturity Tier</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderFooter(parent) {
+            const footer = document.createElement('footer');
+            footer.className = "max-w-6xl mx-auto mt-auto pt-20 pb-12 flex flex-col items-center gap-10";
+            footer.innerHTML = `
+                <div class="flex items-center gap-12 opacity-30 grayscale">
+                    <span class="font-black text-3xl italic tracking-tighter uppercase">Descasio</span>
+                    <div class="h-6 w-[2px] bg-slate-900"></div>
+                    <span class="font-black text-sm uppercase tracking-[0.5em]">AI Innovation HUB 2026</span>
+                </div>
+                <p class="text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em] text-center max-w-md leading-relaxed">
+                    The Descasio AI Innovation Hub is a proprietary performance measurement tool. All diagnostic data is captured via real-time cloud sync for organizational strategy.
+                </p>
+            `;
+            parent.appendChild(footer);
+        }
+
+        // --- Modals ---
+
+        function renderPinModal(parent) {
+            const div = document.createElement('div');
+            div.className = "fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 fade-in";
+            div.innerHTML = `
+                <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+                    <div class="flex justify-center mb-4"><i data-lucide="lock" class="text-blue-600 w-8 h-8"></i></div>
+                    <h3 class="text-xl font-bold text-center mb-6">Manager Access</h3>
+                    <form id="pin-form" class="space-y-4">
+                        <input type="password" id="pin-input" maxlength="4" class="w-full text-center text-3xl tracking-[1em] font-black py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl outline-none focus:border-blue-600" placeholder="****" autofocus>
+                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl">Unlock</button>
+                        <button type="button" id="pin-cancel" class="w-full py-2 text-slate-400 font-medium">Cancel</button>
+                    </form>
+                </div>
+            `;
+            parent.appendChild(div);
+
+            // Fix: use container.querySelector here is tricky as div is the container
+            // Since div is detached when creating it, querying it directly is fine.
+            div.querySelector('#pin-form').onsubmit = (e) => {
+                e.preventDefault();
+                const val = div.querySelector('#pin-input').value;
+                if (val === ADMIN_PIN) {
+                    state.isAdminAuthenticated = true;
+                    state.showPinModal = false;
+                    state.view = 'admin';
+                } else {
+                    alert("Invalid PIN");
+                }
+                render();
+            };
+            div.querySelector('#pin-cancel').onclick = () => { state.showPinModal = false; render(); };
+            setTimeout(() => div.querySelector('#pin-input').focus(), 100);
+        }
+
+        function renderDetailModal(parent) {
+            const s = state.selectedSubmission;
+            const div = document.createElement('div');
+            div.className = "fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 overflow-y-auto fade-in";
+            
+            let answersHtml = '';
+            QUIZ_QUESTIONS.forEach((q, idx) => {
+                answersHtml += `
+                    <div class="flex gap-4 items-start border-b border-slate-50 pb-4">
+                        <span class="text-xs font-black text-slate-300 mt-1">${idx+1}.</span>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-slate-700 mb-1">${q.text}</p>
+                            <p class="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-lg inline-block font-medium">
+                                ${s.answerLog?.[q.id] || "N/A"}
+                            </p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            div.innerHTML = `
+                <div class="bg-white rounded-[2rem] p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl scrollbar-hide">
+                    <button id="modal-close" class="absolute top-6 right-6 p-2 hover:bg-slate-100 rounded-full transition-colors">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                    <div class="mb-8">
+                        <h3 class="text-3xl font-black text-slate-800">Diagnostic Breakdown</h3>
+                        <p class="text-slate-500">${s.name} — ${s.email}</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div class="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
+                            <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Total Score</p>
+                            <p class="text-2xl font-black text-blue-700">${s.totalScore} <span class="text-sm font-medium">/ 150</span></p>
+                        </div>
+                        <div class="p-4 bg-green-50 border border-green-100 rounded-2xl">
+                            <p class="text-[10px] font-bold text-green-400 uppercase tracking-widest mb-1">Adoption Score</p>
+                            <p class="text-2xl font-black text-green-700">${s.section2Score} <span class="text-sm font-medium">/ 50</span></p>
+                        </div>
+                        <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">AI Hub Tier</p>
+                            <p class="text-2xl font-black text-slate-700">${s.level}</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h4 class="font-bold text-lg text-slate-700 px-1 border-b pb-2">Full Answer Log</h4>
+                        <div class="grid grid-cols-1 gap-4">${answersHtml}</div>
+                    </div>
+                </div>
+            `;
+            parent.appendChild(div);
+            
+            div.querySelector('#modal-close').onclick = () => { state.selectedSubmission = null; render(); };
+            
+            // Global handler for viewing submissions
+            window.viewSubmission = (id) => {
+                state.selectedSubmission = state.submissions.find(sub => sub.id === id);
+                render();
+            }
+        }
+
+        function renderAuthError(parent) {
+            const div = document.createElement('div');
+            div.className = "fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4";
+            div.innerHTML = `
+                <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="alert-circle" class="w-8 h-8 text-red-600"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-slate-900 mb-2">Connection Error</h3>
+                    <p class="text-slate-500 mb-6 text-sm">Anonymous Authentication is disabled in Firebase.</p>
+                    <button onclick="window.location.reload()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-black transition-all">Retry</button>
+                </div>
+            `;
+            parent.appendChild(div);
+        }
+
+        function renderFirestoreError(parent) {
+            const div = document.createElement('div');
+            div.className = "fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4";
+            const codeBlock = `rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if request.auth != null;\n    }\n  }\n}`;
+            
+            div.innerHTML = `
+                <div class="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl text-center">
+                    <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="shield-alert" class="w-8 h-8 text-amber-600"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-slate-900 mb-2">Database Access Blocked</h3>
+                    <p class="text-slate-500 mb-6 text-sm">Please update your Firebase Firestore Rules.</p>
+                    <div class="bg-slate-900 text-slate-50 p-4 rounded-xl text-left text-xs font-mono mb-6 border border-slate-700 overflow-x-auto">
+                        <pre>${codeBlock}</pre>
+                    </div>
+                    <button onclick="window.location.reload()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-all">Retry</button>
+                </div>
+            `;
+            parent.appendChild(div);
+        }
+
+        // --- Data Logic ---
+
+        function calculateResults() {
+            let totalScore = 0;
+            let section1Score = 0;
+            let section2Score = 0;
+            let section3Score = 0;
+
+            QUIZ_QUESTIONS.forEach(q => {
+                const result = state.answers[q.id];
+                const pts = result?.points || 0;
+                totalScore += pts;
+                if (q.section === 1) section1Score += pts;
+                if (q.section === 2) section2Score += pts;
+                if (q.section === 3) section3Score += pts;
+            });
+            
+            let level = 'Beginner';
+            if (totalScore >= 116) level = 'Advanced';
+            else if (totalScore >= 76) level = 'Intermediate';
+            
+            return { totalScore, section1Score, section2Score, section3Score, level };
+        }
+
+        async function handleSubmit() {
+            if (!state.user) return;
+            state.isSubmitting = true;
+            render();
+
+            const results = calculateResults();
+            const fullAnswerLog = {};
+            QUIZ_QUESTIONS.forEach(q => fullAnswerLog[q.id] = state.answers[q.id]?.text || "No Answer");
+
+            const submissionData = {
+                ...state.formData,
+                ...results,
+                answerLog: fullAnswerLog,
+                timestamp: new Date().toISOString(),
+                userId: state.user.uid
+            };
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'submissions'), submissionData);
+                state.view = 'submitted';
+            } catch (err) {
+                console.error("Error saving:", err);
+                if (err.code === 'permission-denied') state.firestoreError = 'permission-denied';
+            } finally {
+                state.isSubmitting = false;
+                render();
+            }
+        }
+
+        // --- Initialization ---
+
+        async function init() {
+            try {
+                await signInAnonymously(auth);
+            } catch (err) {
+                console.error("Auth failed:", err);
+                state.authError = err.message;
+                state.isAuthLoading = false;
+                render();
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            state.user = user;
+            state.isAuthLoading = false;
+            if (user) {
+                // Subscribe to data
+                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'submissions'));
+                onSnapshot(q, (snapshot) => {
+                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    state.submissions = data;
+                    state.firestoreError = null;
+                    render(); // Re-render when data changes
+                }, (error) => {
+                    if(error.code === 'permission-denied') {
+                        state.firestoreError = 'permission-denied';
+                        render();
+                    }
+                });
+            }
+            render();
+        });
+
+        // Start
+        init();
+        render(); // Initial Render
+
+    </script>
+</body>
+</html>
