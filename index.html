@@ -57,9 +57,6 @@
         const db = getFirestore(app);
         const appId = 'descasio-ai-hub';
         
-        // SECURITY: Hashed PIN (Base64 Encoded)
-        // To generate a new PIN, open console and run: btoa('YOUR_NEW_PIN')
-        // Current PIN is '#fh@' (Base64: I2ZoQA==)
         const ADMIN_HASH = "I2ZoQA=="; 
 
         // SECURITY: Encoded Correct Answers (Indices) to prevent casual inspection
