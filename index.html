@@ -57,8 +57,10 @@
         const db = getFirestore(app);
         const appId = 'descasio-ai-hub';
         
-        // SECURITY: Hashed PIN (Base64 of "()_+")
-        const ADMIN_HASH = "KClfKw=="; 
+        // SECURITY: Hashed PIN (Base64 Encoded)
+        // To generate a new PIN, open console and run: btoa('YOUR_NEW_PIN')
+        // Current PIN is '#fh@' (Base64: I2ZoQA==)
+        const ADMIN_HASH = "I2ZoQA=="; 
 
         // SECURITY: Encoded Correct Answers (Indices) to prevent casual inspection
         // Format: QuestionID: Base64(Index of Correct Answer in ORIGINAL list)
@@ -548,8 +550,8 @@
             parent.appendChild(footer);
         }
 
-        // --- Modals ---
-        
+        // --- Modals (Pin, Detail, Errors) ---
+        // (Similar to previous, but using modalContainer logic)
         function renderPinModal(parent) {
             const div = document.createElement('div');
             div.className = "fixed inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 pointer-events-auto";
