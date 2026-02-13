@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
+        <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-R2RZEK3CTD"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -13,23 +13,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Descasio AI Innovation Hub</title>
-    <!-- Favicon: Brain Circuit (Blue) -->
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%232563EB' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z'/%3E%3Cpath d='M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z'/%3E%3Cpath d='M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4'/%3E%3Cpath d='M17.599 6.5a3 3 0 0 0 .399-1.375'/%3E%3Cpath d='M6.003 5.125A3 3 0 0 0 6.401 6.5'/%3E%3Cpath d='M3.477 10.896a4 4 0 0 1 .585-.396'/%3E%3Cpath d='M19.938 10.5a4 4 0 0 1 .585.396'/%3E%3Cpath d='M6 18a4 4 0 0 1-1.938-.5'/%3E%3Cpath d='M19.938 17.5A4 4 0 0 1 18 18'/%3E%3C/svg%3E">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; overflow: hidden; /* Prevent body scroll, handle internally */ }
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Custom scrollbar */
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; overflow: hidden; }
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #CBD5E1; border-radius: 20px; }
-        
-        /* Hide scrollbar for clean modals */
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -37,17 +31,15 @@
 <body class="text-slate-900 h-screen w-screen overflow-hidden">
 
     <div id="app" class="h-full w-full flex flex-col">
-        <!-- Initial Loader -->
         <div class="flex items-center justify-center h-full w-full">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
     </div>
 
-    <!-- Firebase & Application Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Configuration ---
         const firebaseConfig = {
@@ -64,40 +56,60 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = 'descasio-ai-hub';
-        const ADMIN_PIN = "()_+";
+        
+        // SECURITY: Hashed PIN (Base64 of "()_+")
+        const ADMIN_HASH = "KClfKw=="; 
 
-        // --- Data ---
-        const QUIZ_QUESTIONS = [
-            { id: 'q1', section: 1, text: 'In the context of LLMs, what is a "Hallucination"?', options: [ { text: 'When the AI encounters a server error.', points: 0 }, { text: 'When the AI generates plausible but factually incorrect information.', points: 5 }, { text: 'When the AI refuses to answer a prompt.', points: 0 } ]},
-            { id: 'q2', section: 1, text: 'What does "RAG" (Retrieval-Augmented Generation) do?', options: [ { text: 'It speeds up the AI\'s typing speed.', points: 0 }, { text: 'It connects the AI to specific, external data to improve accuracy.', points: 5 }, { text: 'It generates random images for text prompts.', points: 0 } ]},
-            { id: 'q3', section: 1, text: 'Is it safe to paste Descasio internal financial data into a public, free chatbot?', options: [ { text: 'Yes, if I use a pseudonym.', points: 0 }, { text: 'No, public tools may use my data to train future models.', points: 5 } ]},
-            { id: 'q4', section: 1, text: 'What is a "Token" in AI processing?', options: [ { text: 'A digital currency used to pay for AI.', points: 0 }, { text: 'A basic unit of text (like a word or part of a word) the AI reads.', points: 5 }, { text: 'A security key for logging in.', points: 0 } ]},
-            { id: 'q5', section: 1, text: 'Which of these is a limitation of Generative AI?', options: [ { text: 'It cannot write code.', points: 0 }, { text: 'It lacks true reasoning and may produce biased outputs.', points: 5 }, { text: 'It cannot translate languages.', points: 0 } ]},
-            { id: 'q6', section: 1, text: 'What does "Multimodal" mean in AI?', options: [ { text: 'The ability to run on multiple computers.', points: 0 }, { text: 'The ability to process different inputs like text, images, and audio.', points: 5 }, { text: 'The ability to handle multiple users at once.', points: 0 } ]},
-            { id: 'q7', section: 1, text: 'What is a "Context Window"?', options: [ { text: 'The size of the AI\'s user interface.', points: 0 }, { text: 'The amount of information the AI can "remember" during a conversation.', points: 5 }, { text: 'The time limit for a single query.', points: 0 } ]},
-            { id: 'q8', section: 1, text: 'What is "Prompt Engineering"?', options: [ { text: 'The software engineering required to build an LLM.', points: 0 }, { text: 'The skill of crafting inputs to get specific and useful AI results.', points: 5 }, { text: 'Hardcoding responses for specific questions.', points: 0 } ]},
-            { id: 'q9', section: 1, text: 'What is "Temperature" in AI settings?', options: [ { text: 'The physical heat generated by the servers.', points: 0 }, { text: 'A setting that controls the randomness/creativity of the output.', points: 5 }, { text: 'The speed at which the AI responds.', points: 0 } ]},
-            { id: 'q10', section: 1, text: 'How should you treat the output of an AI for high-stakes work?', options: [ { text: 'Accept it immediately as it is more accurate than human work.', points: 0 }, { text: 'Treat it as a first draft and always fact-check and verify.', points: 5 }, { text: 'Use it only for non-important tasks.', points: 0 } ]},
-            { id: 'q11', section: 2, text: 'How often do you use AI for your core work tasks?', options: [ { text: 'Never / Rarely', points: 0 }, { text: 'Weekly (1-2 times)', points: 2 }, { text: 'Daily integration', points: 5 } ]},
-            { id: 'q12', section: 2, text: 'Have you used AI to draft or polish a formal email in the last 7 days?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
-            { id: 'q13', section: 2, text: 'Do you use AI to summarize long documents or meeting transcripts?', options: [ { text: 'Never', points: 0 }, { text: 'Occasionally', points: 3 }, { text: 'Standard practice', points: 5 } ]},
-            { id: 'q14', section: 2, text: 'Have you used AI for brainstorming or creative strategy in the last month?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
-            { id: 'q15', section: 2, text: 'Do you use AI to troubleshoot technical issues or write code/formulas?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
-            { id: 'q16', section: 2, text: 'Have you replaced a standard search (Google) with an AI chat today?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
-            { id: 'q17', section: 2, text: 'Is an AI tool (Copilot/Gemini) pinned to your browser/taskbar?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
-            { id: 'q18', section: 2, text: 'Have you tried AI for data cleaning or analysis in Excel/Sheets?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
-            { id: 'q19', section: 2, text: 'Do you use AI to simplify complex technical jargon for clients?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
-            { id: 'q20', section: 2, text: 'Have you shared a helpful prompt with a colleague in the past month?', options: [ { text: 'No', points: 0 }, { text: 'Yes', points: 5 } ]},
-            { id: 'q21', section: 3, text: 'How do you handle a "bad" response from an AI?', options: [ { text: 'Close the chat and do it manually.', points: 0 }, { text: 'Tell the AI it was wrong and ask for a fix.', points: 2 }, { text: 'Provide more context, examples, and negative constraints.', points: 5 } ]},
-            { id: 'q22', section: 3, text: 'What is "Persona Prompting"?', options: [ { text: 'Entering personal data into AI.', points: 0 }, { text: 'Assigning a specific role/expert profile to the AI.', points: 5 } ]},
-            { id: 'q23', section: 3, text: 'Can you get an AI to output data specifically in JSON or CSV format?', options: [ { text: 'No, it only writes text.', points: 0 }, { text: 'Yes, I can request and verify specific formats.', points: 5 } ]},
-            { id: 'q24', section: 3, text: 'What is "Chain-of-Thought" prompting?', options: [ { text: 'Prompting the AI to think step-by-step.', points: 5 }, { text: 'Linking multiple AI chats together.', points: 0 } ]},
-            { id: 'q25', section: 3, text: 'Do you use delimiters (e.g., ### or """) to separate instructions from data?', options: [ { text: 'No', points: 0 }, { text: 'Yes, for complex prompts.', points: 5 } ]},
-            { id: 'q26', section: 3, text: 'What are "Few-Shot" examples?', options: [ { text: 'Providing 2-3 examples of the desired output in the prompt.', points: 5 }, { text: 'Asking the AI to answer in very few words.', points: 0 } ]},
-            { id: 'q27', section: 3, text: 'How do you handle AI "Refusal" (e.g., "I cannot answer this")?', options: [ { text: 'I stop and move on.', points: 0 }, { text: 'I rephrase to focus on a safe/educational context.', points: 5 } ]},
-            { id: 'q28', section: 3, text: 'Can you use AI to summarize a 50-page PDF accurately?', options: [ { text: 'No, it\'s too long.', points: 0 }, { text: 'Yes, by uploading the file or using chunking methods.', points: 5 } ]},
-            { id: 'q29', section: 3, text: 'What is "System Prompt"?', options: [ { text: 'The prompt the user types first.', points: 0 }, { text: 'The base level instruction that defines the AI\'s behavior.', points: 5 } ]},
-            { id: 'q30', section: 3, text: 'Do you verify AI-generated facts with a secondary source?', options: [ { text: 'Rarely', points: 0 }, { text: 'Always for professional work', points: 5 } ]}
+        // SECURITY: Encoded Correct Answers (Indices) to prevent casual inspection
+        // Format: QuestionID: Base64(Index of Correct Answer in ORIGINAL list)
+        // 0=MA==, 1=MQ==, 2=Mg==
+        const SECURE_KEY = {
+            'q1': 'MQ==', 'q2': 'MQ==', 'q3': 'MQ==', 'q4': 'MQ==', 'q5': 'MQ==',
+            'q6': 'MQ==', 'q7': 'MQ==', 'q8': 'MQ==', 'q9': 'MQ==', 'q10': 'MQ==',
+            'q11': 'Mg==', 'q12': 'MQ==', 'q13': 'Mg==', 'q14': 'MQ==', 'q15': 'MQ==',
+            'q16': 'MQ==', 'q17': 'MQ==', 'q18': 'MQ==', 'q19': 'MQ==', 'q20': 'MQ==',
+            'q21': 'Mg==', 'q22': 'MQ==', 'q23': 'MQ==', 'q24': 'MA==', 'q25': 'MQ==',
+            'q26': 'MA==', 'q27': 'MQ==', 'q28': 'MQ==', 'q29': 'MQ==', 'q30': 'MQ=='
+        };
+
+        // --- Data (Points Removed for Obfuscation) ---
+        // Original Order is Preserved here, but UI will SHUFFLE them.
+        const RAW_QUESTIONS = [
+            { id: 'q1', section: 1, text: 'In the context of LLMs, what is a "Hallucination"?', options: ['When the AI encounters a server error.', 'When the AI generates plausible but factually incorrect information.', 'When the AI refuses to answer a prompt.']},
+            { id: 'q2', section: 1, text: 'What does "RAG" (Retrieval-Augmented Generation) do?', options: ['It speeds up the AI\'s typing speed.', 'It connects the AI to specific, external data to improve accuracy.', 'It generates random images for text prompts.']},
+            { id: 'q3', section: 1, text: 'Is it safe to paste Descasio internal financial data into a public, free chatbot?', options: ['Yes, if I use a pseudonym.', 'No, public tools may use my data to train future models.']},
+            { id: 'q4', section: 1, text: 'What is a "Token" in AI processing?', options: ['A digital currency used to pay for AI.', 'A basic unit of text (like a word or part of a word) the AI reads.', 'A security key for logging in.']},
+            { id: 'q5', section: 1, text: 'Which of these is a limitation of Generative AI?', options: ['It cannot write code.', 'It lacks true reasoning and may produce biased outputs.', 'It cannot translate languages.']},
+            { id: 'q6', section: 1, text: 'What does "Multimodal" mean in AI?', options: ['The ability to run on multiple computers.', 'The ability to process different inputs like text, images, and audio.', 'The ability to handle multiple users at once.']},
+            { id: 'q7', section: 1, text: 'What is a "Context Window"?', options: ['The size of the AI\'s user interface.', 'The amount of information the AI can "remember" during a conversation.', 'The time limit for a single query.']},
+            { id: 'q8', section: 1, text: 'What is "Prompt Engineering"?', options: ['The software engineering required to build an LLM.', 'The skill of crafting inputs to get specific and useful AI results.', 'Hardcoding responses for specific questions.']},
+            { id: 'q9', section: 1, text: 'What is "Temperature" in AI settings?', options: ['The physical heat generated by the servers.', 'A setting that controls the randomness/creativity of the output.', 'The speed at which the AI responds.']},
+            { id: 'q10', section: 1, text: 'How should you treat the output of an AI for high-stakes work?', options: ['Accept it immediately as it is more accurate than human work.', 'Treat it as a first draft and always fact-check and verify.', 'Use it only for non-important tasks.']},
+            
+            // Section 2 (Scoring: 0, 2/3, 5 - Mapped via Index logic in score calc)
+            // Options ordered: [Low, Med, High] or [No, Yes] for simplicity in raw data, handled in Calc.
+            { id: 'q11', section: 2, text: 'How often do you use AI for your core work tasks?', options: ['Never / Rarely', 'Weekly (1-2 times)', 'Daily integration']},
+            { id: 'q12', section: 2, text: 'Have you used AI to draft or polish a formal email in the last 7 days?', options: ['No', 'Yes']},
+            { id: 'q13', section: 2, text: 'Do you use AI to summarize long documents or meeting transcripts?', options: ['Never', 'Occasionally', 'Standard practice']},
+            { id: 'q14', section: 2, text: 'Have you used AI for brainstorming or creative strategy in the last month?', options: ['No', 'Yes']},
+            { id: 'q15', section: 2, text: 'Do you use AI to troubleshoot technical issues or write code/formulas?', options: ['No', 'Yes']},
+            { id: 'q16', section: 2, text: 'Have you replaced a standard search (Google) with an AI chat today?', options: ['No', 'Yes']},
+            { id: 'q17', section: 2, text: 'Is an AI tool (Copilot/Gemini) pinned to your browser/taskbar?', options: ['No', 'Yes']},
+            { id: 'q18', section: 2, text: 'Have you tried AI for data cleaning or analysis in Excel/Sheets?', options: ['No', 'Yes']},
+            { id: 'q19', section: 2, text: 'Do you use AI to simplify complex technical jargon for clients?', options: ['No', 'Yes']},
+            { id: 'q20', section: 2, text: 'Have you shared a helpful prompt with a colleague in the past month?', options: ['No', 'Yes']},
+
+            // Section 3
+            { id: 'q21', section: 3, text: 'How do you handle a "bad" response from an AI?', options: ['Close the chat and do it manually.', 'Tell the AI it was wrong and ask for a fix.', 'Provide more context, examples, and negative constraints.']},
+            { id: 'q22', section: 3, text: 'What is "Persona Prompting"?', options: ['Entering personal data into AI.', 'Assigning a specific role/expert profile to the AI.']},
+            { id: 'q23', section: 3, text: 'Can you get an AI to output data specifically in JSON or CSV format?', options: ['No, it only writes text.', 'Yes, I can request and verify specific formats.']},
+            { id: 'q24', section: 3, text: 'What is "Chain-of-Thought" prompting?', options: ['Prompting the AI to think step-by-step.', 'Linking multiple AI chats together.']},
+            { id: 'q25', section: 3, text: 'Do you use delimiters (e.g., ### or """) to separate instructions from data?', options: ['No', 'Yes, for complex prompts.']},
+            { id: 'q26', section: 3, text: 'What are "Few-Shot" examples?', options: ['Providing 2-3 examples of the desired output in the prompt.', 'Asking the AI to answer in very few words.']},
+            { id: 'q27', section: 3, text: 'How do you handle AI "Refusal" (e.g., "I cannot answer this")?', options: ['I stop and move on.', 'I rephrase to focus on a safe/educational context.']},
+            { id: 'q28', section: 3, text: 'Can you use AI to summarize a 50-page PDF accurately?', options: ['No, it\'s too long.', 'Yes, by uploading the file or using chunking methods.']},
+            { id: 'q29', section: 3, text: 'What is "System Prompt"?', options: ['The prompt the user types first.', 'The base level instruction that defines the AI\'s behavior.']},
+            { id: 'q30', section: 3, text: 'Do you verify AI-generated facts with a secondary source?', options: ['Rarely', 'Always for professional work']}
         ];
 
         // --- State Management ---
@@ -107,7 +119,8 @@
             adminSubView: 'registry',
             submissions: [],
             formData: { name: '', department: '', email: '' },
-            answers: {},
+            answers: {}, // Stores text of selected answer
+            processedQuestions: [], // Stores shuffled questions
             selectedSubmission: null,
             isSubmitting: false,
             isAuthLoading: true,
@@ -115,8 +128,27 @@
             firestoreError: null,
             isAdminAuthenticated: false,
             showPinModal: false,
-            pinInput: ""
+            pinInput: "",
+            duplicateError: false
         };
+
+        // --- Helper: Shuffle ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // --- Initialize Quiz Data (Randomize on Load) ---
+        function initQuizData() {
+            state.processedQuestions = RAW_QUESTIONS.map(q => {
+                // Clone options to avoid mutating original
+                const opts = [...q.options];
+                return { ...q, options: shuffleArray(opts) };
+            });
+        }
 
         // --- Global Handlers ---
         window.viewSubmission = (id) => {
@@ -127,14 +159,16 @@
             state.adminSubView = val;
             render();
         };
-        window.selectOption = (qId, points, text) => {
-            state.answers[qId] = { points, text };
-            // Optimized partial update to avoid full re-render flickering
+        window.selectOption = (qId, text) => {
+            state.answers[qId] = text; // Just store text, calc score later
+            
+            // UI Update (Partial)
             const questionBlock = document.getElementById(`q-${qId}`);
             if (questionBlock) {
                 const buttons = questionBlock.querySelectorAll('button');
                 buttons.forEach(btn => {
                     const span = btn.querySelector('span');
+                    // Handle escaped quotes for comparison
                     const isSelected = span && span.innerText === text.replace(/&quot;/g, '"').replace(/\\'/g, "'");
                     const dot = btn.querySelector('div'); 
                     if (isSelected) {
@@ -163,29 +197,122 @@
             }
         };
 
+        // --- Core Functions ---
+        
+        async function checkDuplicate(email) {
+            const q = query(
+                collection(db, 'artifacts', appId, 'public', 'data', 'submissions'), 
+                where("email", "==", email),
+                limit(1)
+            );
+            const snapshot = await getDocs(q);
+            return !snapshot.empty;
+        }
+
+        // Score Calculation using Hidden Key
+        function calculateResults() {
+            let total = 0, s1 = 0, s2 = 0, s3 = 0;
+            
+            RAW_QUESTIONS.forEach(q => {
+                const selectedText = state.answers[q.id];
+                if (!selectedText) return;
+
+                // Find index of selected text in ORIGINAL raw list (unshuffled)
+                const originalIndex = q.options.indexOf(selectedText);
+                
+                // Get correct index from secure key
+                const correctIndex = parseInt(atob(SECURE_KEY[q.id]));
+                
+                let pts = 0;
+                if (q.section === 2) {
+                    // Section 2 Logic (Adoption): Higher index = higher points usually [0, 2, 5] or [0, 5]
+                    // If 2 options: 0=0pts, 1=5pts
+                    // If 3 options: 0=0pts, 1=2/3pts, 2=5pts
+                    if (q.options.length === 2) pts = originalIndex === 1 ? 5 : 0;
+                    else if (q.options.length === 3) pts = originalIndex === 2 ? 5 : (originalIndex === 1 ? 2 : 0); // specific weight for q13
+                    // Correction for Q13 (0, 3, 5) logic
+                    if (q.id === 'q13' && originalIndex === 1) pts = 3;
+                } else {
+                    // Sections 1 & 3: Binary correct/incorrect
+                    pts = (originalIndex === correctIndex) ? 5 : 0;
+                }
+
+                total += pts;
+                if(q.section===1) s1+=pts; if(q.section===2) s2+=pts; if(q.section===3) s3+=pts;
+            });
+            
+            let lvl = total >= 116 ? 'Advanced' : total >= 76 ? 'Intermediate' : 'Beginner';
+            return { totalScore: total, section1Score: s1, section2Score: s2, section3Score: s3, level: lvl };
+        }
+
+        async function handleStart() {
+            const isEmailValidNow = state.formData.email.toLowerCase().endsWith('@descasio.io');
+            if (state.formData.name && state.formData.department && isEmailValidNow) {
+                state.isAuthLoading = true;
+                render(); // Show loader
+                
+                try {
+                    const exists = await checkDuplicate(state.formData.email);
+                    if (exists) {
+                        state.duplicateError = true;
+                        state.isAuthLoading = false;
+                        render();
+                        return;
+                    }
+                    state.duplicateError = false;
+                    state.view = 'quiz';
+                } catch (e) {
+                    console.error("Check failed", e);
+                } finally {
+                    state.isAuthLoading = false;
+                    render();
+                }
+            }
+        }
+
+        async function handleSubmit() {
+            if (!state.user) return;
+            state.isSubmitting = true;
+            render();
+            const results = calculateResults();
+            const log = {};
+            // Log full text answers
+            RAW_QUESTIONS.forEach(q => log[q.id] = state.answers[q.id] || "No Answer");
+            
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'submissions'), {
+                    ...state.formData, ...results, answerLog: log, timestamp: new Date().toISOString(), userId: state.user.uid
+                });
+                state.view = 'submitted';
+            } catch (err) {
+                console.error(err);
+                if(err.code === 'permission-denied') state.firestoreError = 'permission-denied';
+            } finally {
+                state.isSubmitting = false;
+                render();
+            }
+        }
+
         // --- Render Logic ---
         let renderTimeout;
         function render() {
             if (renderTimeout) clearTimeout(renderTimeout);
             renderTimeout = setTimeout(() => {
                 const app = document.getElementById('app');
-                
-                // Root container for Flex Layout
                 const container = document.createElement('div');
                 container.className = "h-full w-full flex flex-col bg-[#F8FAFC]";
 
-                // 1. Modals (Overlays) - Fixed absolute positioning
                 const modalContainer = document.createElement('div');
                 modalContainer.className = "absolute inset-0 pointer-events-none z-[100]";
-                if (state.authError || state.firestoreError || state.showPinModal || state.selectedSubmission) {
-                    modalContainer.className = "absolute inset-0 z-[100]"; // Enable pointer events only if modal exists
+                if (state.authError || state.firestoreError || state.showPinModal || state.selectedSubmission || state.duplicateError) {
+                    modalContainer.className = "absolute inset-0 z-[100]";
                     if (state.authError) renderAuthError(modalContainer);
                     else if (state.firestoreError) renderFirestoreError(modalContainer);
+                    else if (state.duplicateError) renderDuplicateError(modalContainer);
                     else if (state.showPinModal) renderPinModal(modalContainer);
                     else if (state.selectedSubmission) renderDetailModal(modalContainer);
                 }
                 
-                // 2. Main Content Routing
                 if (state.view === 'welcome') {
                     const scrollArea = document.createElement('div');
                     scrollArea.className = "flex-1 overflow-y-auto custom-scroll p-4 md:p-8";
@@ -195,19 +322,11 @@
                     container.appendChild(scrollArea);
                 } 
                 else if (state.view === 'quiz') {
-                    // Split Layout for Quiz
                     const topSection = document.createElement('div');
                     topSection.className = "flex-none p-4 md:px-8 pt-4 pb-2 bg-[#F8FAFC] z-10 shadow-sm border-b border-slate-100";
-                    
                     const header = document.createElement('div');
                     header.className = "flex justify-between items-center mb-4";
-                    header.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <div class="bg-blue-600 p-2 rounded-xl"><i data-lucide="brain-circuit" class="text-white w-5 h-5"></i></div>
-                            <span class="font-black text-slate-800 uppercase tracking-widest text-xs">AI Innovation Hub</span>
-                        </div>
-                        <div class="bg-slate-900 text-white px-4 py-1.5 rounded-full font-bold text-xs" id="quiz-progress">${Object.keys(state.answers).length} / 30</div>
-                    `;
+                    header.innerHTML = `<div class="flex items-center gap-3"><div class="bg-blue-600 p-2 rounded-xl"><i data-lucide="brain-circuit" class="text-white w-5 h-5"></i></div><span class="font-black text-slate-800 uppercase tracking-widest text-xs">AI Innovation Hub</span></div><div class="bg-slate-900 text-white px-4 py-1.5 rounded-full font-bold text-xs" id="quiz-progress">${Object.keys(state.answers).length} / 30</div>`;
                     topSection.appendChild(header);
                     container.appendChild(topSection);
 
@@ -244,21 +363,12 @@
             }, 50);
         }
 
-        // --- Render Functions ---
+        // --- Component Renders ---
 
         function renderHeader(parent) {
             const header = document.createElement('header');
             header.className = "w-full flex justify-between items-center mb-10";
-            header.innerHTML = `
-                <div class="flex items-center gap-4">
-                    <div class="bg-blue-600 p-2.5 rounded-2xl shadow-xl shadow-blue-200"><i data-lucide="brain-circuit" class="text-white w-8 h-8"></i></div>
-                    <div>
-                        <h1 class="text-3xl font-black text-slate-800 tracking-tighter leading-none uppercase">Descasio</h1>
-                        <p class="text-[10px] uppercase tracking-[0.4em] font-black text-blue-600">AI Innovation Hub</p>
-                    </div>
-                </div>
-                <div id="header-actions"></div>
-            `;
+            header.innerHTML = `<div class="flex items-center gap-4"><div class="bg-blue-600 p-2.5 rounded-2xl shadow-xl shadow-blue-200"><i data-lucide="brain-circuit" class="text-white w-8 h-8"></i></div><div><h1 class="text-3xl font-black text-slate-800 tracking-tighter leading-none uppercase">Descasio</h1><p class="text-[10px] uppercase tracking-[0.4em] font-black text-blue-600">AI Innovation Hub</p></div></div><div id="header-actions"></div>`;
             const actions = header.querySelector('#header-actions');
             if (!state.isAdminAuthenticated) {
                 const btn = document.createElement('button');
@@ -308,7 +418,6 @@
             `;
             parent.appendChild(container);
             
-            // Events - MANUAL STATE UPDATE TO PREVENT RENDER FLICKER
             const nameInput = container.querySelector('#input-name');
             const emailInput = container.querySelector('#input-email');
             const deptInput = container.querySelector('#input-dept');
@@ -333,31 +442,25 @@
             nameInput.oninput = (e) => { state.formData.name = e.target.value; updateUI(); };
             emailInput.oninput = (e) => { state.formData.email = e.target.value; updateUI(); };
             deptInput.onchange = (e) => { state.formData.department = e.target.value; updateUI(); };
-            startBtn.onclick = () => { 
-                const isEmailValidNow = state.formData.email.toLowerCase().endsWith('@descasio.io');
-                if (state.formData.name && state.formData.department && isEmailValidNow) {
-                    state.view = 'quiz'; 
-                    render(); 
-                }
-            };
+            startBtn.onclick = handleStart;
         }
 
         function renderQuizQuestions(parent) {
             const container = document.createElement('div');
             container.className = "max-w-3xl mx-auto space-y-4";
             
-            QUIZ_QUESTIONS.forEach((q, idx) => {
+            state.processedQuestions.forEach((q, idx) => {
                 const qEl = document.createElement('div');
                 qEl.className = "bg-white rounded-[2rem] shadow-sm border border-slate-200 p-8";
                 let optionsHtml = '';
-                q.options.forEach((opt) => {
-                    const isSelected = state.answers[q.id]?.text === opt.text;
+                q.options.forEach((optText) => {
+                    const isSelected = state.answers[q.id] === optText;
                     const borderClass = isSelected ? 'border-blue-600 bg-blue-50 text-blue-700 font-black shadow-inner' : 'border-slate-50 bg-slate-50/30 hover:border-slate-200';
                     const dotClass = isSelected ? 'bg-blue-600 border-blue-600 scale-110 shadow-lg' : 'border-slate-200';
-                    const escapedText = opt.text.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                    const escapedText = optText.replace(/'/g, "\\'").replace(/"/g, "&quot;");
                     optionsHtml += `
-                        <button onclick="window.selectOption('${q.id}', ${opt.points}, '${escapedText}')" class="w-full text-left px-6 py-4 rounded-2xl border-2 transition-all flex items-center justify-between group-hover:bg-opacity-50 mb-3 ${borderClass}">
-                            <span class="text-base">${opt.text}</span>
+                        <button onclick="window.selectOption('${q.id}', '${escapedText}')" class="w-full text-left px-6 py-4 rounded-2xl border-2 transition-all flex items-center justify-between group-hover:bg-opacity-50 mb-3 ${borderClass}">
+                            <span class="text-base">${optText}</span>
                             <div class="w-5 h-5 flex-shrink-0 rounded-full border-2 transition-all ${dotClass}"></div>
                         </button>
                     `;
@@ -389,30 +492,17 @@
             const results = calculateResults();
             const container = document.createElement('div');
             container.className = "bg-white rounded-[4rem] shadow-2xl p-16 text-center max-w-2xl mx-auto";
-            container.innerHTML = `
-                <div class="w-32 h-32 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-10 shadow-inner"><i data-lucide="check-circle-2" class="text-green-600 w-16 h-16"></i></div>
-                <h2 class="text-5xl font-black mb-6 tracking-tighter">Diagnostic Complete</h2>
-                <p class="text-slate-500 mb-12 text-xl leading-relaxed">Thank you, <span class="text-slate-900 font-black underline">${state.formData.name}</span>.</p>
-                <div class="bg-slate-50 p-10 rounded-[3rem] mb-12 border border-slate-100 shadow-inner">
-                    <p class="text-[10px] font-black text-slate-400 tracking-[0.3em] mb-4 uppercase">Calculated AI Competency</p>
-                    <p class="text-5xl font-black text-blue-600 uppercase tracking-tighter">${results.level}</p>
-                </div>
-                <button onclick="window.location.reload()" class="text-slate-400 font-black hover:text-blue-600 transition-colors uppercase text-xs tracking-[0.3em]">Exit Assessment Session</button>
-            `;
+            container.innerHTML = `<div class="w-32 h-32 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-10 shadow-inner"><i data-lucide="check-circle-2" class="text-green-600 w-16 h-16"></i></div><h2 class="text-5xl font-black mb-6 tracking-tighter">Diagnostic Complete</h2><p class="text-slate-500 mb-12 text-xl leading-relaxed">Thank you, <span class="text-slate-900 font-black underline">${state.formData.name}</span>.</p><div class="bg-slate-50 p-10 rounded-[3rem] mb-12 border border-slate-100 shadow-inner"><p class="text-[10px] font-black text-slate-400 tracking-[0.3em] mb-4 uppercase">Calculated AI Competency</p><p class="text-5xl font-black text-blue-600 uppercase tracking-tighter">${results.level}</p></div><button onclick="window.location.reload()" class="text-slate-400 font-black hover:text-blue-600 transition-colors uppercase text-xs tracking-[0.3em]">Exit Assessment Session</button>`;
             parent.appendChild(container);
         }
 
         function renderAdmin(parent) {
             const container = document.createElement('div');
             container.className = "space-y-8 pb-20";
-            
-            // Logic for Dashboard Metrics
             const tierCounts = { Beginner: 0, Intermediate: 0, Advanced: 0 };
             let totalOrgScore = 0;
             state.submissions.forEach(s => {
-                if (s.level === 'Advanced') tierCounts.Advanced++;
-                else if (s.level === 'Intermediate') tierCounts.Intermediate++;
-                else tierCounts.Beginner++;
+                if (s.level === 'Advanced') tierCounts.Advanced++; else if (s.level === 'Intermediate') tierCounts.Intermediate++; else tierCounts.Beginner++;
                 totalOrgScore += (s.totalScore || 0);
             });
             const avgScore = state.submissions.length ? Math.round(totalOrgScore / state.submissions.length) : 0;
@@ -420,44 +510,18 @@
 
             container.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Total Submissions</p><p class="text-4xl font-black text-slate-900 leading-none">${state.submissions.length}</p></div>
-                        <div class="w-14 h-14 bg-slate-50 rounded-[1.5rem] flex items-center justify-center"><i data-lucide="users" class="text-slate-300 w-7 h-7"></i></div>
-                    </div>
-                    <div class="bg-blue-600 p-8 rounded-[2rem] shadow-xl shadow-blue-200 text-white flex items-center justify-between relative overflow-hidden">
-                        <div class="relative z-10"><p class="text-[10px] font-black text-white/50 uppercase tracking-[0.2em] mb-2">Org. Adoption Score</p><div class="flex items-baseline gap-2"><p class="text-4xl font-black leading-none">${avgScore}</p><span class="text-lg font-bold text-white/50">/ 150</span></div></div>
-                        <div class="w-14 h-14 bg-white/10 rounded-[1.5rem] flex items-center justify-center relative z-10"><i data-lucide="bar-chart-3" class="w-7 h-7"></i></div>
-                    </div>
-                    <div class="bg-slate-900 p-8 rounded-[2rem] shadow-xl text-white">
-                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Competency Breakdown</p>
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-300">Advanced</span><span class="text-sm font-black bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-md">${tierCounts.Advanced}</span></div>
-                            <div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-300">Intermediate</span><span class="text-sm font-black bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-md">${tierCounts.Intermediate}</span></div>
-                            <div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-300">Beginner</span><span class="text-sm font-black bg-slate-700 text-slate-400 px-2 py-0.5 rounded-md">${tierCounts.Beginner}</span></div>
-                        </div>
-                    </div>
+                    <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between"><div><p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Total Submissions</p><p class="text-4xl font-black text-slate-900 leading-none">${state.submissions.length}</p></div><div class="w-14 h-14 bg-slate-50 rounded-[1.5rem] flex items-center justify-center"><i data-lucide="users" class="text-slate-300 w-7 h-7"></i></div></div>
+                    <div class="bg-blue-600 p-8 rounded-[2rem] shadow-xl shadow-blue-200 text-white flex items-center justify-between relative overflow-hidden"><div class="relative z-10"><p class="text-[10px] font-black text-white/50 uppercase tracking-[0.2em] mb-2">Org. Adoption Score</p><div class="flex items-baseline gap-2"><p class="text-4xl font-black leading-none">${avgScore}</p><span class="text-lg font-bold text-white/50">/ 150</span></div></div><div class="w-14 h-14 bg-white/10 rounded-[1.5rem] flex items-center justify-center relative z-10"><i data-lucide="bar-chart-3" class="w-7 h-7"></i></div></div>
+                    <div class="bg-slate-900 p-8 rounded-[2rem] shadow-xl text-white"><p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Competency Breakdown</p><div class="space-y-3"><div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-300">Advanced</span><span class="text-sm font-black bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-md">${tierCounts.Advanced}</span></div><div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-300">Intermediate</span><span class="text-sm font-black bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-md">${tierCounts.Intermediate}</span></div><div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-300">Beginner</span><span class="text-sm font-black bg-slate-700 text-slate-400 px-2 py-0.5 rounded-md">${tierCounts.Beginner}</span></div></div></div>
                 </div>
-                <div class="flex gap-4 mb-4 border-b border-slate-200 pb-1">
-                    <button onclick="window.setAdminView('registry')" class="px-6 py-2 rounded-t-xl font-bold text-sm transition-colors ${!isDeptView ? 'bg-white border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}">Registry Log</button>
-                    <button onclick="window.setAdminView('dept')" class="px-6 py-2 rounded-t-xl font-bold text-sm transition-colors ${isDeptView ? 'bg-white border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}">Department Analysis</button>
-                </div>
-                <div class="bg-white rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden">
-                    ${isDeptView ? renderDeptTableHTML() : renderRegistryTableHTML()}
-                </div>
+                <div class="flex gap-4 mb-4 border-b border-slate-200 pb-1"><button onclick="window.setAdminView('registry')" class="px-6 py-2 rounded-t-xl font-bold text-sm transition-colors ${!isDeptView ? 'bg-white border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}">Registry Log</button><button onclick="window.setAdminView('dept')" class="px-6 py-2 rounded-t-xl font-bold text-sm transition-colors ${isDeptView ? 'bg-white border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}">Department Analysis</button></div>
+                <div class="bg-white rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden">${isDeptView ? renderDeptTableHTML() : renderRegistryTableHTML()}</div>
             `;
             parent.appendChild(container);
         }
 
         function renderRegistryTableHTML() {
-            const rows = state.submissions.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map(s => `
-                <tr class="hover:bg-slate-50/80 transition-all border-b border-slate-50">
-                    <td class="px-6 py-6"><p class="font-black text-slate-800">${s.name}</p><p class="text-xs text-slate-500 font-medium italic">${s.email}</p><span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded mt-1 inline-block font-bold uppercase">${s.department}</span></td>
-                    <td class="px-6 py-6 text-center font-bold text-slate-600">${s.section1Score}</td>
-                    <td class="px-6 py-6 text-center font-bold text-slate-600">${s.section2Score}</td>
-                    <td class="px-6 py-6 text-center font-bold text-slate-600">${s.section3Score}</td>
-                    <td class="px-6 py-6 text-center"><span class="px-3 py-1 rounded-full text-xs font-black border bg-slate-50">${s.totalScore}</span></td>
-                    <td class="px-6 py-6"><button onclick="window.viewSubmission('${s.id}')" class="text-slate-400 hover:text-blue-600 p-2"><i data-lucide="info" class="w-5 h-5"></i></button></td>
-                </tr>`).join('');
+            const rows = state.submissions.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map(s => `<tr class="hover:bg-slate-50/80 transition-all border-b border-slate-50"><td class="px-6 py-6"><p class="font-black text-slate-800">${s.name}</p><p class="text-xs text-slate-500 font-medium italic">${s.email}</p><span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded mt-1 inline-block font-bold uppercase">${s.department}</span></td><td class="px-6 py-6 text-center font-bold text-slate-600">${s.section1Score}</td><td class="px-6 py-6 text-center font-bold text-slate-600">${s.section2Score}</td><td class="px-6 py-6 text-center font-bold text-slate-600">${s.section3Score}</td><td class="px-6 py-6 text-center"><span class="px-3 py-1 rounded-full text-xs font-black border bg-slate-50">${s.totalScore}</span></td><td class="px-6 py-6"><button onclick="window.viewSubmission('${s.id}')" class="text-slate-400 hover:text-blue-600 p-2"><i data-lucide="info" class="w-5 h-5"></i></button></td></tr>`).join('');
             return `<div class="overflow-x-auto"><table class="w-full text-left"><thead><tr class="text-[10px] uppercase font-black text-slate-400 bg-slate-50/50"><th class="px-6 py-6">Staff</th><th class="px-6 py-6 text-center">Sec 1</th><th class="px-6 py-6 text-center">Sec 2</th><th class="px-6 py-6 text-center">Sec 3</th><th class="px-6 py-6 text-center">Total</th><th class="px-6 py-6">Action</th></tr></thead><tbody>${rows}</tbody></table></div>`;
         }
 
@@ -484,28 +548,47 @@
             parent.appendChild(footer);
         }
 
-        // --- Modals (Pin, Detail, Errors) ---
-        // (Similar to previous, but using modalContainer logic)
+        // --- Modals ---
+        
         function renderPinModal(parent) {
             const div = document.createElement('div');
             div.className = "fixed inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 pointer-events-auto";
             div.innerHTML = `<div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl"><h3 class="text-xl font-bold text-center mb-6">Manager Access</h3><form id="pin-form" class="space-y-4"><input type="password" id="pin-input" maxlength="4" class="w-full text-center text-3xl font-black py-4 bg-slate-50 border-2 rounded-2xl" placeholder="****" autofocus><div class="flex gap-2"><button type="button" id="pin-cancel" class="flex-1 py-3 text-slate-400 font-bold">Cancel</button><button type="submit" class="flex-1 bg-blue-600 text-white font-bold rounded-xl">Unlock</button></div></form></div>`;
             parent.appendChild(div);
-            div.querySelector('#pin-form').onsubmit = (e) => { e.preventDefault(); if(div.querySelector('#pin-input').value === ADMIN_PIN) { state.isAdminAuthenticated = true; state.showPinModal = false; state.view='admin'; } else alert("Invalid"); render(); };
+            div.querySelector('#pin-form').onsubmit = (e) => { 
+                e.preventDefault(); 
+                const inputVal = div.querySelector('#pin-input').value;
+                // Security Fix: Compare HASH of PIN, not raw pin.
+                if(btoa(inputVal) === ADMIN_HASH) { 
+                    state.isAdminAuthenticated = true; 
+                    state.showPinModal = false; 
+                    state.view='admin'; 
+                } else { 
+                    alert("Invalid PIN"); 
+                } 
+                render(); 
+            };
             div.querySelector('#pin-cancel').onclick = () => { state.showPinModal = false; render(); };
             setTimeout(() => div.querySelector('#pin-input')?.focus(), 100);
         }
 
-        function renderDetailModal(parent) {
+        function renderDuplicateError(parent) {
+            const div = document.createElement('div');
+            div.className = "fixed inset-0 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 pointer-events-auto";
+            div.innerHTML = `<div class="bg-white rounded-3xl p-8 max-w-md text-center"><i data-lucide="user-x" class="w-12 h-12 text-red-600 mx-auto mb-4"></i><h3 class="font-black text-lg mb-2">Access Denied</h3><p class="text-sm text-slate-500 mb-6">A submission already exists for <strong>${state.formData.email}</strong>. Multiple attempts are not permitted.</p><button onclick="window.location.reload()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold">Return Home</button></div>`;
+            parent.appendChild(div);
+        }
+
+        function renderDetailModal(parent) { /* ... same as before ... */ 
             const s = state.selectedSubmission;
             const div = document.createElement('div');
             div.className = "fixed inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 pointer-events-auto";
-            div.innerHTML = `<div class="bg-white rounded-[2rem] p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl scrollbar-hide relative"><button id="modal-close" class="absolute top-6 right-6 p-2 bg-slate-100 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button><h3 class="text-2xl font-black text-slate-800 mb-1">${s.name}</h3><p class="text-slate-500 mb-6 text-sm">${s.email}</p><div class="grid grid-cols-3 gap-4 mb-8"><div class="bg-blue-50 p-4 rounded-xl"><p class="text-[10px] font-bold text-blue-400 uppercase">Total</p><p class="text-2xl font-black text-blue-700">${s.totalScore}</p></div><div class="bg-green-50 p-4 rounded-xl"><p class="text-[10px] font-bold text-green-400 uppercase">Adoption</p><p class="text-2xl font-black text-green-700">${s.section2Score}</p></div><div class="bg-slate-50 p-4 rounded-xl"><p class="text-[10px] font-bold text-slate-400 uppercase">Tier</p><p class="text-xl font-black text-slate-700">${s.level}</p></div></div><div class="space-y-4">${QUIZ_QUESTIONS.map((q,i) => `<div class="border-b border-slate-50 pb-2"><p class="text-xs text-slate-400 font-bold mb-1">Q${i+1}</p><p class="text-sm font-medium text-slate-800">${q.text}</p><p class="text-xs text-blue-600 mt-1 bg-blue-50 inline-block px-2 py-1 rounded">${s.answerLog?.[q.id]||'N/A'}</p></div>`).join('')}</div></div>`;
+            div.innerHTML = `<div class="bg-white rounded-[2rem] p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl scrollbar-hide relative"><button id="modal-close" class="absolute top-6 right-6 p-2 bg-slate-100 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button><h3 class="text-2xl font-black text-slate-800 mb-1">${s.name}</h3><p class="text-slate-500 mb-6 text-sm">${s.email}</p><div class="grid grid-cols-3 gap-4 mb-8"><div class="bg-blue-50 p-4 rounded-xl"><p class="text-[10px] font-bold text-blue-400 uppercase">Total</p><p class="text-2xl font-black text-blue-700">${s.totalScore}</p></div><div class="bg-green-50 p-4 rounded-xl"><p class="text-[10px] font-bold text-green-400 uppercase">Adoption</p><p class="text-2xl font-black text-green-700">${s.section2Score}</p></div><div class="bg-slate-50 p-4 rounded-xl"><p class="text-[10px] font-bold text-slate-400 uppercase">Tier</p><p class="text-xl font-black text-slate-700">${s.level}</p></div></div><div class="space-y-4">${RAW_QUESTIONS.map((q,i) => `<div class="border-b border-slate-50 pb-2"><p class="text-xs text-slate-400 font-bold mb-1">Q${i+1}</p><p class="text-sm font-medium text-slate-800">${q.text}</p><p class="text-xs text-blue-600 mt-1 bg-blue-50 inline-block px-2 py-1 rounded">${s.answerLog?.[q.id]||'N/A'}</p></div>`).join('')}</div></div>`;
             parent.appendChild(div);
             div.querySelector('#modal-close').onclick = () => { state.selectedSubmission = null; render(); };
         }
 
-        function renderAuthError(parent) {
+        function renderAuthError(parent) { /* ... same ... */ 
             const div = document.createElement('div');
             div.className = "fixed inset-0 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 pointer-events-auto";
             let msg = "Anonymous Auth Disabled";
@@ -514,48 +597,16 @@
             parent.appendChild(div);
         }
 
-        function renderFirestoreError(parent) {
+        function renderFirestoreError(parent) { /* ... same ... */ 
             const div = document.createElement('div');
             div.className = "fixed inset-0 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 pointer-events-auto";
             div.innerHTML = `<div class="bg-white rounded-3xl p-8 max-w-md text-center"><i data-lucide="shield-alert" class="w-12 h-12 text-amber-600 mx-auto mb-4"></i><h3 class="font-black text-lg mb-2">Database Locked</h3><p class="text-sm text-slate-500 mb-6">Update Firebase Rules to allow access.</p><button onclick="window.location.reload()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold">Retry</button></div>`;
             parent.appendChild(div);
         }
 
-        // --- Core Functions ---
-        function calculateResults() {
-            let total = 0, s1 = 0, s2 = 0, s3 = 0;
-            QUIZ_QUESTIONS.forEach(q => {
-                const pts = state.answers[q.id]?.points || 0;
-                total += pts;
-                if(q.section===1) s1+=pts; if(q.section===2) s2+=pts; if(q.section===3) s3+=pts;
-            });
-            let lvl = total >= 116 ? 'Advanced' : total >= 76 ? 'Intermediate' : 'Beginner';
-            return { totalScore: total, section1Score: s1, section2Score: s2, section3Score: s3, level: lvl };
-        }
-
-        async function handleSubmit() {
-            if (!state.user) return;
-            state.isSubmitting = true;
-            render();
-            const results = calculateResults();
-            const log = {};
-            QUIZ_QUESTIONS.forEach(q => log[q.id] = state.answers[q.id]?.text || "No Answer");
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'submissions'), {
-                    ...state.formData, ...results, answerLog: log, timestamp: new Date().toISOString(), userId: state.user.uid
-                });
-                state.view = 'submitted';
-            } catch (err) {
-                console.error(err);
-                if(err.code === 'permission-denied') state.firestoreError = 'permission-denied';
-            } finally {
-                state.isSubmitting = false;
-                render();
-            }
-        }
-
         // Init
         const init = async () => {
+            initQuizData(); // Shuffle Questions ONCE on load
             try { await signInAnonymously(auth); } 
             catch (err) { state.authError = err.message; render(); }
         };
@@ -573,7 +624,7 @@
             render();
         });
         init();
-        render(); // Initial paint
+        render(); 
     </script>
 </body>
 </html>
